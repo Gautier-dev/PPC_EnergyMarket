@@ -2,8 +2,8 @@ from random import random, gauss
 
 def weather():
     '''Update weather state in the shared memory'''
-    current_weather = weather_in_shared_memory
-    return fonction_meteo_selon_gauss(current_weather)
+    temperature, type_of_weather = current_weather_in_shared_memory
+    return (fonction_meteo_selon_gauss(temperature), 4* random())
 
 def fonction_meteo_selon_gauss(degre):
     variation = degre - 10
