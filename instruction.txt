@@ -1,0 +1,2 @@
+Tous synchroniser avec une horloge:
+il y aura un processus horloge qui envoit le top d horloge a chaque processus
