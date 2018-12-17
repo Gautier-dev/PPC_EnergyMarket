@@ -1,35 +1,48 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec 17 16:52:25 2018
+
+@author: sjacquier1
+"""
+
 # -*- coding: utf-8 -*-
 
-def Market():
-    BesoinGlobal = 0 #Energie demandée par les maisons   
-    TableauBesoin = [] #Référencera chaque maison et son besoin en énergie
-    Banque_Energie_Payante = 0 #Stockage d'énergie à vendre
-    Banque_Energie_Gratuite = 0 #Stockage d'énergie à donner
+def Market(n):
+    ExternalProcessLaunch()
+    GlobalNeed = 0 #Energy wanted by the house (initialised)
+    NeedArray = [] #Will reference all the houses and their need (initialised)
+    PayableEnergyBank = 0 #(initialised)
+    FreeEnergyBank = 0 #(initialised)
+    NumberOfHomes = n
     while True :
-        if Reception_Message_Maison :
-            if Maison_Besoin_D_Energie :
-                BesoinGlobal += BesoinMaison
-                TableauBesoin.append((maison,BesoinMaison))
+        if Reception_Message_House : #Everytime an house transmit its data
+            if HouseNeedsEnergy : 
+                GlobalNeed += HouseNeed
+                NeedArray.append((HouseIdentifier,HouseNeed))
                 
-            elif Maison_Donne_Energie :
-                Besoin_Energie_Gratuite += EnergieMaison
+            elif HouseGivesEnergy :
+                FreeEnergyBank += HouseEnergy
                 
-            elif Maison_Vend_Energie :
-                Besoin_Energie_Payante += EnergieMaison
+            elif HouseSellsEnergy :
+                PayableEnergyBank += HouseEnergy
         
-        if Clock2_Tick:
-            Demande_D_Energie_Payante = BesoinGlobal - Banque_Energie_Gratuite
-            Prix = CalculPrix(Demande_D_Energie_Payante, Banque_Energie_Payante, Facteurs_Extérieurs, Prix)
-            #Plus le rapport demande/banque est haut, plus le prix est élevé.
-            #Dans le cas où il n'y a simplement pas assez d'énergie, on considère que le prix augmente drastiquement.
-            Prix_Du_Joul = Prix/Demande_D_Energie_Payante
-            for maison in TableauBesoin:
-                Prix_De_Son_Energie = maison[1]*Prix_Du_Joul
-                Envoyer_Maison(Prix_De_Son_Energie)
-            Banques = 0
-            TableauBesoin = []
-            BesoinGlobal = 0
+        if Clock.Value == 0 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
+            PayableEnergyWanted = GlobalNeed - FreeEnergyBank #We consider that the free energy is distributed equally to all the houses in need. They will have to pay for the rest
+            FreeEnergyPerHouse = FreeEnergyBank / NumberOfHomes
+            Price = PriceCalculation(PayableEnergyWanted, PayableEnergyBank, ExternalFactors, Price) #Using a linear model
+            for house in NeedArray:
+                EnergyNeed = EnergyNeed - FreeEnergyPerHouse #Free Energy given to the house
+                PriceForThisHouse = Calculation(EnergyNeed,Price) 
+                SendToHouse(PriceForThisHouse) #Communication by Message queues
+            PayableEnergyBank, FreeEnergyBank = 0
+            NeedArray = []
+            GlobalNeed = 0
+            
+            while Clock.Value == 0 :
+                pass  #Block 
+
         
-        if Reception_Signal_External :
-            impacter(Facteurs_Exterieurs)
+        if Reception_Signal_External : #Handler : we receive a signal from this process
+            impact(ExternalFactors)
             
