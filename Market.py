@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 
 def Market(n):
+    """
+    Function defining the Market process.
+    Father of the External Process.
+    While the Clock.Value is equal to 1, it receives all the data of the houses.
+    It increments energy banks and updates an array representing the need of all the houses.
+    When the Clock.Value is equal to 0, it calculates the price of the energy and tell the houses what they have to pay to receive it.
+    """
+    
     ExternalProcessLaunch()
     GlobalNeed = 0 #Energy wanted by the house (initialised)
     NeedArray = [] #Will reference all the houses and their need (initialised)
