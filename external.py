@@ -5,7 +5,7 @@ import random
 
 def External():
     while true
-        time.wait(300)
+        time.wait(300) #It can happen anytime, regardless the state of the clock.
         factor = random.randint(1,100)
         if factor > 98 :
             if factor == 99 :
