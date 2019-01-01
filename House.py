@@ -10,7 +10,7 @@ def House(i):
     HouseIdentifier = i
     Consommation, Behavior, Money, IncomePerMonth = Randomisation() #We will randomise, using statistics ressources, the data of the house.
     while True: 
-        if Clock.Value == 1 : #The value of the shared memory has been updated by the Clock : it is the turn of the Houses to calculate their part
+        if Clock.Value == 1: #The value of the shared memory has been updated by the Clock : it is the turn of the Houses to calculate their part
             Money += IncomePerMonth/30 #The house win money with the work of the family
             Weather = Weather.Value #The value of the shared memory has been updated by the Weather Process
             CreatedEnergy = Production(Weather)
