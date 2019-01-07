@@ -1,12 +1,12 @@
-
-
 # -*- coding: utf-8 -*-
 
 import time
+import multiprocessing
 
-def Clock():
-    Clock.value = 1  #Initialisation of the shared memory value.
+def ClockTick():
     while True:
-        time.wait(1000)
+        time.wait(2000)
         Clock.value = (Clock.value + 1) % 2
+        
+Clock = multiprocessing.Value('i',1) #Définition de la shared memory
 
