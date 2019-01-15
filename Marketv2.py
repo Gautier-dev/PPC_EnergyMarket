@@ -53,7 +53,7 @@ class Market(multiprocessing.Process):
             
             return (price*lamb + disasters)*factor #"NotReallyAccurateModel" (tm)
         
-        class ExternalProcess(multiprocessing.Process) :
+        class ExternalProcess(multiprocessing.Process):
             """
             This process sends signals to its parent randomly, simulating disasters.
             """
@@ -130,8 +130,15 @@ class Market(multiprocessing.Process):
             
                 PayableEnergyWanted = GlobalNeed.value #We consider that the free energy is distributed equally to all the houses in need. They will have to pay for the rest
                 price = priceCalculation(PayableEnergyWanted, PayableEnergyBank, externalFactors, price) #Using a linear model
+                i, value = mq.receive()
+
+                for i in range(self.numberOfHouses):
+                    MqHouse = sysv_ipc.MessageQueue(i)
+                    MqHouse.send(value)
+
+
     
-                PayableEnergyBank.value , GlobalNeed.value = 0
+                PayableEnergyBank.value, GlobalNeed.value = 0
                 
                 lockGlobalNeed.release()
                 lockPayable.release()

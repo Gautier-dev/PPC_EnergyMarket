@@ -20,10 +20,10 @@ class House(multiprocessing.Process):
     def Production(self):
         return self.FacteurProduction * self.weather
 
-    def SendMarket(self, rest):
+    def SendHouses(self, rest):
 
         message = str(rest).encode()
-        MessageQueueMarket.send(message)
+        MessageQueueHouse.send(message)
 
 
     def run(self):
@@ -33,13 +33,23 @@ class House(multiprocessing.Process):
                 Weather = Weather.Value  # The value of the shared memory has been updated by the Weather Process
                 CreatedEnergy = self.Production()
                 Rest = CreatedEnergy - self.FacteurConsommation
-                self.SendMarket(Rest)  # We send to the market, via Message queues, the data of the house
-
+                self.SendHouses(Rest)  # We send to the market, via Message queues, the data of the house
                 while Clock.Value == 1:
                     pass  # Block until this is the turn of the other process to compute
+
+            if demande_fini:
+                echange()
+
 
             if Reception_Message_Market:
                 Money += GainOrLoss  # We update the income / outcome due to the energy market.
 
             if Clock.value == 0:
-                pass
+                MqHouse = sysv_ipc.MessageQueue(self.i, sysv_ipc.IPC_CREAT)
+                message, t = MqHouse.receive()
+                value = message.decode()
+                self.argent = self.argent - value
+
+
+
+
