@@ -4,7 +4,7 @@ Clock = multiprocessing.Value('i',1) #Définition de la shared memory
 
 tick = ClockTick(Clock)
 tick.start()
-MessageQueueMarket = sysv_ipc.MessageQueue(128, sysv_ipc.IPC_CREAT)
+
 class House(multiprocessing.Process):
     def __init__(self, i, FacteurConsommation, FacteurProduction, Comportement, argent, Salaire):
         super().__init__()
@@ -15,10 +15,12 @@ class House(multiprocessing.Process):
         self.argent = argent
         self.Salaire = Salaire
         self.clock = Clock.value
-        self.weather = Weather
+        self.weather = Weather.value
 
     def Production(self):
         return self.FacteurProduction * self.weather
+    def consommation(self):
+        return 0  #TODO
 
     def SendHouses(self, rest):
 
@@ -30,15 +32,17 @@ class House(multiprocessing.Process):
         while True:
             if self.clock == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the Houses to calculate their part
                 self.argent += self.Salaire / 30  # The house win money with the work of the family
-                Weather = Weather.Value  # The value of the shared memory has been updated by the Weather Process
+                 # The value of the shared memory has been updated by the Weather Process
                 CreatedEnergy = self.Production()
-                Rest = CreatedEnergy - self.FacteurConsommation
+                Rest = CreatedEnergy - self.consommation()
                 self.SendHouses(Rest)  # We send to the market, via Message queues, the data of the house
                 while Clock.Value == 1:
                     pass  # Block until this is the turn of the other process to compute
 
             if demande_fini:
                 echange()
+
+
 
 
             if Reception_Message_Market:

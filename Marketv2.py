@@ -31,65 +31,69 @@ class Market(multiprocessing.Process):
     When the Clock.Value is equal to 0, it calculates the price of the energy and tell the houses what they have to pay to receive it.
     """
     
-    def __init__(self,n,Clock):
+    def __init__(self,n):
         super().__init__()
         self.numberOfHouses = n
-    
+        self.mq = sysv_ipc.MessageQueue(-1, sysv_ipc.IPC_CREAT)
+        self.clock = Clock.value
+
+    def priceCalculation(self, PayableEnergyWanted, PayableEnergyBank, ExternalFactors, price):
+        """
+        This function calculates the price of the energy.
+        The more energy the people need and he less energy the bank has, the more expensive it would be.
+        We also have to check the externalfactors and the weather
+        """
+
+        # External factors : a counter of disasters which increases the price
+        disasters = externalFactors.value * 10
+        externalFactors.value = 0
+        # Attenuation factor :
+        lamb = 0.99
+        factor = PayableEnergyWanted / PayableEnergyBank
+
+        return (price * lamb + disasters) * factor  # "NotReallyAccurateModel" (tm)
+
+    class ExternalProcess(multiprocessing.Process):
+        """
+        This process sends signals to its parent randomly, simulating disasters.
+        """
+
+        def __init__(self):
+            super().init()
+
+        def run(self):
+            time.sleep(400)
+            x = random.random()
+            if x > 0.99:
+                os.kill(os.getppid(), signal.SIGINT)
+
+    def handler(self, sig, frame):
+        if sig == signal.SIGINT:
+            with lockExternal:
+                externalFactors.value += 1
+
+    def interprete(self, value, price):
+        """
+        After the reception of a message through the message queue, we have to interprete it :
+        Do the house need energy ? -> Do the globalneed needs to be increased ?
+        Do the house give / sell energy ? Etc.
+        Necessity to implement semaphores to protect energybank and globalneed values.
+        value : (HouseIdentifier,RestOrNeed)
+        """
+        if value[1] < 0:  # The House NEEDS energy
+            with lockGlobalNeed:
+                GlobalNeed.value -= value[1]
+            self.mq.send(-1 * value[1] * price, type=value[0])  # We send to the house the price it has to pay for the energy.
+
+
+        else:  # The house SELLS energy
+            with lockPayable:
+                PayableEnergyBank.value += value[1]
+            self.mq.send(value[1] * price, type=value[0])  # We send to the house the money it earns selling the energy
+
     def run(self):
-        
-        def priceCalculation(PayableEnergyWanted, PayableEnergyBank, ExternalFactors, price):
-            """
-            This function calculates the price of the energy.
-            The more energy the people need and he less energy the bank has, the more expensive it would be.
-            We also have to check the externalfactors and the weather
-            """
-            
-            #External factors : a counter of disasters which increases the price        
-            disasters = externalFactors.value * 10
-            externalFactors.value=0
-            #Attenuation factor :
-            lamb = 0.99
-            factor = PayableEnergyWanted / PayableEnergyBank
-            
-            return (price*lamb + disasters)*factor #"NotReallyAccurateModel" (tm)
-        
-        class ExternalProcess(multiprocessing.Process):
-            """
-            This process sends signals to its parent randomly, simulating disasters.
-            """
-            def __init__(self):
-                super().init()
-            def run(self):
-                time.sleep(400)
-                x = random.random()
-                if x>0.99 :
-                    os.kill(os.getppid(),signal.SIGINT)
-                    
-        def handler(sig,frame):
-            if sig == signal.SIGINT:
-                with lockExternal:
-                    externalFactors.value += 1
-        
-        def interprete(value,price) :
-            """
-            After the reception of a message through the message queue, we have to interprete it :
-            Do the house need energy ? -> Do the globalneed needs to be increased ?
-            Do the house give / sell energy ? Etc.
-            Necessity to implement semaphores to protect energybank and globalneed values.
-            value : (HouseIdentifier,RestOrNeed)
-            """
-            if value[1]<0 :  #The House NEEDS energy
-                with lockGlobalNeed:
-                    GlobalNeed.value -= value[1]
-                mq.send(-1 * value[1]*price, type=value[0]) #We send to the house the price it has to pay for the energy.
-                            
-                        
-            else: #The house SELLS energy
-                with lockPayable:
-                    PayableEnergyBank.value += value[1]
-                mq.send(value[1]*price, type=value[0]) #We send to the house the money it earns selling the energy
-                
-        external = ExternalProcess()
+
+        external = self.ExternalProcess
         external.start()
         NumberOfThreads = 10
         
@@ -105,14 +109,14 @@ class Market(multiprocessing.Process):
         PayableEnergyBank = threading.Value('i',0) #(initialisation)
         lockPayable = threading.lock()       
         #Message Passing definition : 
-        key = -1
-        mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREAT)    
+
+
         
     
         while True:
-            while mq.current_messages >0 : #While there is data sent by the houses.
+            while self.mq.current_messages >0 : #While there is data sent by the houses.
                 with concurrent.futures.ThreadPoolExecutor(max_workers = NumberOfThreads) as executor: #Thread pool          
-                    message, t = mq.receive()
+                    message, t = self.mq.receive()
                     value = message.decode() 
                     #Value : (HouseIdentifier,RestOrNeed)
                     
@@ -134,9 +138,10 @@ class Market(multiprocessing.Process):
                 still_msg = True
                 while still_msg:
                     try:
-                        i, value = mq.receive()
+                        i, value = self.mq.receive()
                         MqHouse = sysv_ipc.MessageQueue(i)
-                        MqHouse.send(value)
+                        prixMaison = price * value
+                        MqHouse.send(prixMaison)
                     except:
                         still_msg = False
 
