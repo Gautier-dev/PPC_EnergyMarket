@@ -5,7 +5,7 @@ import multiprocessing
 jour = multiprocessing.Value('i', 0)
 Weather = multiprocessing.Array('i', [0, 0])
 
-class weather(multiprocessing.Process, Weather):
+class weather(multiprocessing.Process):
     """
     Update weather state in the shared memory.
     return temperature, weather state: (1 sunny, 2 cloudy, 3 rain, 4 snow), sunlight
@@ -13,7 +13,7 @@ class weather(multiprocessing.Process, Weather):
     def __init__(self, t):
         super().__init__()
         self.t = t
-
+        self.weather = Weather
 
 
     def Temp_function(self):
@@ -30,9 +30,9 @@ class weather(multiprocessing.Process, Weather):
                 cumule += jour_mois[k]
             if cumule < self.t <= cumule + jour_mois[k]:
                 ecart_type = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
-                v = random.gauss(DataTemp[k][1], ecart_type)
+                v = random.gauss(DataTemp[k][1], 0.3*ecart_type)
                 while (v > DataTemp[k][2]) and (v < DataTemp[k][1]):
-                    v = random.gauss(DataTemp[k][1], ecart_type)
+                    v = random.gauss(DataTemp[k][1], 0.3*ecart_type)
                 return v
 
 
@@ -54,8 +54,8 @@ class weather(multiprocessing.Process, Weather):
     def run(self):
         if Clock.value == 0:
             jour.value = jour + 1
-            Weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
-            Weather[1] = self.sunlight()
+            self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
+            self.weather[1] = self.sunlight()
             while Clock.Value == 0:
                 pass
 

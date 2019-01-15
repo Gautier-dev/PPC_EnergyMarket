@@ -19,7 +19,7 @@ import os
 Clock = multiprocessing.Value('i',1) #Définition de la shared memory
 
 #The weather is a shared array
-Weather = multiprocessing.Array('i',[0,0])
+Weather = multiprocessing.Array('i', [0,0])
 
 class Market(multiprocessing.Process):
     """

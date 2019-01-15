@@ -4,9 +4,9 @@ import time
 import multiprocessing
 
 class ClockTick(multiprocessing.process):
-    def __init__(self,clock):
+    def __init__(self, clock):
         super().__init__()
-        self.clock=clock #Pointer of the shared memory
+        self.clock = clock #Pointer of the shared memory
     def run(self):
         Clock=self.clock
         while True:
