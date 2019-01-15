@@ -130,11 +130,15 @@ class Market(multiprocessing.Process):
             
                 PayableEnergyWanted = GlobalNeed.value #We consider that the free energy is distributed equally to all the houses in need. They will have to pay for the rest
                 price = priceCalculation(PayableEnergyWanted, PayableEnergyBank, externalFactors, price) #Using a linear model
-                i, value = mq.receive()
 
-                for i in range(self.numberOfHouses):
-                    MqHouse = sysv_ipc.MessageQueue(i)
-                    MqHouse.send(value)
+                still_msg = True
+                while still_msg:
+                    try:
+                        i, value = mq.receive()
+                        MqHouse = sysv_ipc.MessageQueue(i)
+                        MqHouse.send(value)
+                    except:
+                        still_msg = False
 
 
     
