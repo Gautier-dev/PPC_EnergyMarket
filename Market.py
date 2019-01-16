@@ -13,6 +13,7 @@ import threading
 import sysv_ipc
 import signal
 import os
+import ast
 
 
 
@@ -26,9 +27,10 @@ class Market(multiprocessing.Process):
     When the Clock.Value is equal to 0, it calculates the price of the energy and tell the houses what they have to pay to receive it.
     """
     
-    def __init__(self,externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather):
+    def __init__(self,externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather,child_conn):
         super().__init__()
         self.mq = sysv_ipc.MessageQueue(-1, sysv_ipc.IPC_CREAT)
+        self.firstTime = 1 #Boolean : 1 = first time used, we don't have to calculate the price of the energy
         
         #Shared memory pointers
         self.externalFactors = externalFactors #Shared memory counting the disasters that can affect the energy price
@@ -41,6 +43,9 @@ class Market(multiprocessing.Process):
         self.lockExternal = lockExternal
         self.lockGlobalNeed = lockGlobalNeed
         self.lockPayable = lockPayable
+        
+        #Pipe
+        self.pipe = child_conn
 
     def priceCalculation(self, PayableEnergyWanted, PayableEnergyBank, externalFactors, price):
         """
@@ -51,14 +56,13 @@ class Market(multiprocessing.Process):
 
         # External factors : a counter of disasters which increases the price
         disasters = externalFactors.value * 10
-        externalFactors.value = 0
         # Attenuation factor :
         lamb = 0.99
         factor = PayableEnergyWanted / PayableEnergyBank
 
         return (price * lamb + disasters) * factor  # "NotReallyAccurateModel" (tm)
 
-    class ExternalProcess(multiprocessing.Process):
+    class externalProcess(multiprocessing.Process):
         """
         This process sends signals to its parent randomly, simulating disasters.
         """
@@ -89,17 +93,20 @@ class Market(multiprocessing.Process):
         if restOrNeed < 0:  # The House NEEDS energy
             with self.lockGlobalNeed:
                 self.globalNeed.value -= restOrNeed
-            mqHouse.send(-1 * restOrNeed * price)  # We send to the house the price it has to pay for the energy.
+            message = str(-1 * restOrNeed * price).encode()
+            mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
 
 
         else:  # The house SELLS energy
             with self.lockPayable:
                 self.energyBank.value += restOrNeed[1]
-            mqHouse.send(restOrNeed * price)  # We send to the house the money it earns selling the energy
+            message = str(restOrNeed * price).encode()
+            mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
 
     def run(self):
 
-        external = self.ExternalProcess
+        external = self.externalProcess()
+        signal.signal(signal.SIGINT, self.handler) #associate the SIGINT signal to the handler
         external.start()
         
         price = 100 #Price at the beginning of the simulation
@@ -108,7 +115,8 @@ class Market(multiprocessing.Process):
         while True:
             while self.mq.current_messages > 0 and self.clock.Value == 0 : #While there is data sent by the houses.
                 
-                value, t = self.mq.receive()     
+                message, t = self.mq.receive()
+                value = ast.literal_eval(message.decode())
                 #Value : (HouseIdentifier,RestOrNeed)
                 houseIdentifier = value[0]
                 restOrNeed = value[1]
@@ -117,19 +125,27 @@ class Market(multiprocessing.Process):
                     
             
             if self.clock.Value == 1 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
-                #We have to acquire all the locks :
-                self.lockGlobalNeed.acquire()
-                self.lockPayable.acquire()
-                self.lockExternal.acquire()
-            
-                PayableEnergyWanted = self.globalNeed.value #We consider that the free energy is distributed equally to all the houses in need. They will have to pay for the rest
-                price = self.priceCalculation(PayableEnergyWanted, self.energyBank, self.externalFactors, price) #Using a linear model
-    
-                self.energyBank.value, self.globalNeed.value = 0
+                if self.firstTime == 1:
+                    self.firstTime = 0
+                else:
+                    #We have to acquire all the locks :
+                    self.lockGlobalNeed.acquire()
+                    self.lockPayable.acquire()
+                    self.lockExternal.acquire()
                 
-                self.lockGlobalNeed.release()
-                self.lockPayable.release()
-                self.lockExternal.release()
+                    payableEnergyWanted = self.globalNeed.value
+                    totalPrice = price * payableEnergyWanted
+                    price = self.priceCalculation(payableEnergyWanted, self.energyBank, self.externalFactors, price) #Using a linear model
+                    
+                    #Send information to the main process.
+                    display = "The price of the energy is : " + str(price) + ".\nThe number of disasters which occured today is : " + str(self.externalFactors.value) + ".\nThe price of the energy for the whole community is : " + str(totalPrice) + ".\n"
+                    self.pipe.send(display)                    
+                    
+                    self.energyBank.value, self.globalNeed.value, self.externalFactors.value = 0
+                    
+                    self.lockGlobalNeed.release()
+                    self.lockPayable.release()
+                    self.lockExternal.release()
                 
-                while self.clock.Value == 0:
+                while self.clock.Value == 1:
                     pass #Block 
