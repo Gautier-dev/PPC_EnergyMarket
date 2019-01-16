@@ -37,14 +37,14 @@ if __name__ == "__main__" :
                 
     ###SHARED VALUES AND LOCKS
 
-    externalFactors = threading.Value('i',0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)    
-    lockExternal = multiprocessing.lock() #Protection
+    externalFactors = multiprocessing.Value('i',0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)    
+    lockExternal = multiprocessing.Lock() #Protection
             
-    globalNeed = threading.Value('i',0) #Energy wanted by the houses (used by the Market process) (initialisation)
-    lockGlobalNeed = threading.lock() #Protection
+    globalNeed = multiprocessing.Value('i',0) #Energy wanted by the houses (used by the Market process) (initialisation)
+    lockGlobalNeed = threading.Lock() #Protection
         
-    payableEnergyBank = threading.Value('i',0) #Energy given by the houses (used by the Market process) (initialisation)
-    lockPayable = threading.lock() #Protection
+    payableEnergyBank = multiprocessing.Value('i',0) #Energy given by the houses (used by the Market process) (initialisation)
+    lockPayable = threading.Lock() #Protection
     
     clocker = multiprocessing.Value('i',1) #The clock is a shared variable : 0 = night, 1 = day
     
@@ -57,7 +57,7 @@ if __name__ == "__main__" :
     
     messageQueueHouse = sysv_ipc.MessageQueue(-2, sysv_ipc.IPC_CREAT) #Message queue used by all the houses.
     #This message queue contains the "gifts" of energy. The one which is given and not payable.
-    lockHouse = multiprocessing.lock()#Protection
+    lockHouse = multiprocessing.Lock()#Protection
     
     parent_conn, child_conn = multiprocessing.Pipe() #Création of the pipe between main process and Market Process.
     #The pipe will allow to display data about the simulation.
