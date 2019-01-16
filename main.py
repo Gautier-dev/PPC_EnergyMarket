@@ -8,7 +8,7 @@ import House
 import Weather
 import sysv_ipc
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     
     ###THE CONCEPT
     """
