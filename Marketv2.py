@@ -31,7 +31,7 @@ class Market(multiprocessing.Process):
     When the Clock.Value is equal to 0, it calculates the price of the energy and tell the houses what they have to pay to receive it.
     """
     
-    def __init__(self,n):
+    def __init__(self, n):
         super().__init__()
         self.numberOfHouses = n
         self.mq = sysv_ipc.MessageQueue(-1, sysv_ipc.IPC_CREAT)
