@@ -69,16 +69,17 @@ if __name__ == "__main__":
     
     numberOfHouses = 100    
     
-    marketProcess = Market(externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather)
+    marketProcess = Market.Market(externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,
+                                  clocker,weather, child_conn)
     marketProcess.start()
-    
-    weatherProcess = Weather(weather,clocker,day)
+
+    weatherProcess = Weather.Weather(weather, clocker, day)
     weatherProcess.start()
     
-    houses = [House(i,clocker,weather,lockHouse) for i in range (1,numberOfHouses+1)]
+    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1,numberOfHouses+1)]
     [a.start() for a in houses]
     
-    tickProcess = Clock(clocker)
+    tickProcess = Clock.Clock(clocker)
     tickProcess.start()
     
     while True :

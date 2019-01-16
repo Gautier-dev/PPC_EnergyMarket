@@ -68,7 +68,7 @@ class Market(multiprocessing.Process):
         """
 
         def __init__(self):
-            super().init()
+            super().__init__()
 
         def run(self):
             time.sleep(400)

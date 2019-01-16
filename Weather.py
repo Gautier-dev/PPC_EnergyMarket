@@ -5,7 +5,7 @@ import multiprocessing
 jour = multiprocessing.Value('i', 0)
 Weather = multiprocessing.Array('i', [0, 0])
 
-class weather(multiprocessing.Process):
+class Weather(multiprocessing.Process):
     """
     Update weather state in the shared memory.
     return temperature, weather state: (1 sunny, 2 cloudy, 3 rain, 4 snow), sunlight
