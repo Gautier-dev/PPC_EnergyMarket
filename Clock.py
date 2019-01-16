@@ -12,4 +12,3 @@ class ClockTick(multiprocessing.Process):
         while True:
             time.wait(2000)
             Clock.value = (Clock.value + 1) % 2
-
