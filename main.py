@@ -4,6 +4,7 @@ import multiprocessing
 import threading
 import Market
 import Clock
+import House
 import Weather
 import sysv_ipc
 
@@ -56,7 +57,7 @@ if __name__ == "__main__" :
     
     messageQueueHouse = sysv_ipc.MessageQueue(-2, sysv_ipc.IPC_CREAT) #Message queue used by all the houses.
     #This message queue contains the "gifts" of energy. The one which is given and not payable.
-    lockMaison = multiprocessing.lock()#Protection
+    lockHouse = multiprocessing.lock()#Protection
     
     parent_conn, child_conn = multiprocessing.Pipe() #Création of the pipe between main process and Market Process.
     #The pipe will allow to display data about the simulation.
@@ -73,6 +74,9 @@ if __name__ == "__main__" :
     
     weatherProcess = Weather(weather,clocker,day)
     weatherProcess.start()
+    
+    houses = [House(i,clocker,weather,lockHouse) for i in range (1,numberOfHouses+1)]
+    [a.start() for a in houses]
     
     tickProcess = Clock(clocker)
     tickProcess.start()
