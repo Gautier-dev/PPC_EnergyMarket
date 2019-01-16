@@ -8,25 +8,31 @@ class House(multiprocessing.Process):
     def __init__(self, i, Clock, Weather, LockMaison):
         super().__init__()
         self.i = i
+        self.SurplusOrNeed = 0
+
+        #Randomisation of the house (income, consommation, production...)        
         self.consommationFactor = random.random()
         self.productionFactor = random.random()
         self.lock = LockMaison
 
         p = random.random()
-
         if p < 0.1:
             Behavior = 1  # The house always give its energy surplus
         elif 0.1 <= p < 0.7:
             Behavior = 2  # The house give and sell if no takers
         else:
             Behavior = 3  # The house always sell its energy surplus
-
         self.Behavior = Behavior
+        
         self.Money = random.gauss(3000, 1000)
         self.salary = random.gauss(2200, 700)
+        
+        #Pointers of the shared memories
         self.clock = Clock
         self.weather = Weather
-        self.SurplusOrNeed = 0
+
+        
+        #Message queue of the house
         self.MqHouse = sysv_ipc.MessageQueue(self.i, sysv_ipc.IPC_CREAT)
 
     def Production(self):
@@ -37,6 +43,7 @@ class House(multiprocessing.Process):
 
     def run(self):
         client = sysv_ipc.MessageQueue(-2)  # to send messages to the House Queue
+        client_market = sysv_ipc.MessageQueue(-1) #to send messages to the market
         while True:
             if self.clock == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the
                 # Houses to calculate their part
@@ -45,41 +52,60 @@ class House(multiprocessing.Process):
                 self.SurplusOrNeed = created_energy - self.consommation()
                 
                 if self.SurplusOrNeed > 0 and self.Behavior != 3:
+                    #Give Energy to other houses if we want to give it.
                     message = str((self.i, self.SurplusOrNeed)).encode()
                     client.send(message)  # Send its rest to the House Queue if giver
                     
-                    #TODO : Update Surplus (sinon il va gagner de l'argent sur de l'énergie qu'il donne)                    
-                    
-                    while self.clock.value == 1:  # wait until the end of the day
-                        pass
+                    while self.clock.value == 1 :
+                        #If someone take some energy : we have to change the value of SurplusOrNeed
+                        if self.MqHouse.current_messages != 0:
+                            message, t = self.MqHouse.receive()
+                            value = message.decode()
+                            self.SurplusOrNeed -= float(value)
+                
+
                 else:
                     # receive energy from other houses
                     while self.clock.value == 1:
-                        if self.SurplusOrNeed != 0:
+                        if self.SurplusOrNeed < 0:
+                            self.lock.acquire()
                             msg = client.receive()
+                            self.lock.release()
                             i, value = literal_eval(msg.decode())
-                            if value > self.SurplusOrNeed:
+                            
+                            #There is more energy than needed / just enough
+                            if value >= self.SurplusOrNeed:
+                                self.SurplusOrNeed = 0                                
+                                #Update of the "offer" in the global queue :                                
                                 message = str((i, value - self.SurplusOrNeed)).encode()
-                                self.SurplusOrNeed = 0
                                 self.lock.acquire()
                                 client.send(message)
                                 self.lock.release()
+                                #We say to the house identified by "i" that we have taken some energy.
+                                message = str(value).encode()
+                                thankYou = sysv_ipc.MessageQueue(i, sysv_ipc.IPC_CREAT)
+                                thankYou.send(message)
+                                #The while loop will happen and just pass until the clock value changes.
+                                
+                            #There is not enough energy
                             else:
-                                
-                                #TODO : gautier
-                                
-                                message = str((self.i, self.SurplusOrNeed - value)).encode()
-                                self.lock.acquire()
-                                client.send(message)
-                                self.lock.release()
+                                self.SurplusOrNeed = 0
+                                #No need to send another message to the global queue : all the energy given is used
+                                #We say to the house identified by "i" that we have taken some energy.
+                                message = str(value).encode()
+                                thankYou = sysv_ipc.MessageQueue(i, sysv_ipc.IPC_CREAT)
+                                thankYou.send(message)
+                                #The "while" loop will happen another time, to try to receive enough energy.
+
 
             if self.clock.value == 0:  # it's where the houses send surplus or need to the market
                 
-                client_market = sysv_ipc.MessageQueue(-1)
+                #Sending the message
                 if self.Behavior == 2 or self.Behavior == 3:
                     if self.SurplusOrNeed != 0:
                         client_market.send(self.SurplusOrNeed)
                 
+                #Waiting for the money / the bill.
                 while self.clock.value == 0:              
                     if client_market.current_messages > 0 :                    
                         message, t = client_market.receive()
