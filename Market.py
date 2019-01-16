@@ -58,7 +58,7 @@ class Market(multiprocessing.Process):
 
         return (price * lamb + disasters) * factor  # "NotReallyAccurateModel" (tm)
 
-    class ExternalProcess(multiprocessing.Process):
+    class externalProcess(multiprocessing.Process):
         """
         This process sends signals to its parent randomly, simulating disasters.
         """
@@ -99,7 +99,8 @@ class Market(multiprocessing.Process):
 
     def run(self):
 
-        external = self.ExternalProcess
+        external = self.externalProcess()
+        signal.signal(signal.SIGINT, self.handler) #associate the SIGINT signal to the handler
         external.start()
         
         price = 100 #Price at the beginning of the simulation
@@ -131,5 +132,5 @@ class Market(multiprocessing.Process):
                 self.lockPayable.release()
                 self.lockExternal.release()
                 
-                while self.clock.Value == 0:
+                while self.clock.Value == 1:
                     pass #Block 
