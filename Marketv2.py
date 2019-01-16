@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-EACH TRANSACTION IS PERFORMED ON THE DAY
+EACH TRANSACTION IS PERFORMED ON THE NIGHT
 NIGHT : ONLY THE CALCULATION OF THE PRICE
 """
 
@@ -14,6 +14,20 @@ import sysv_ipc
 import concurrent.futures
 import signal
 import os
+
+
+
+ #IRA DANS LE MAIN :         
+externalFactors = threading.Value('i',0) #This is a counter of the disasters that occurs sometimes.    
+lockExternal = threading.lock()
+        
+        
+GlobalNeed = threading.Value('i',0) #Energy wanted by the house (initialisation)
+lockGlobalNeed = threading.lock() #Protection
+        
+        
+PayableEnergyBank = threading.Value('i',0) #(initialisation)
+lockPayable = threading.lock()       
 
 #The clock is a shared variable
 Clock = multiprocessing.Value('i',1) #Définition de la shared memory
@@ -37,7 +51,7 @@ class Market(multiprocessing.Process):
         self.mq = sysv_ipc.MessageQueue(-1, sysv_ipc.IPC_CREAT)
         self.clock = Clock.value
 
-    def priceCalculation(self, PayableEnergyWanted, PayableEnergyBank, ExternalFactors, price):
+    def priceCalculation(self, PayableEnergyWanted, PayableEnergyBank, externalFactors, price):
         """
         This function calculates the price of the energy.
         The more energy the people need and he less energy the bank has, the more expensive it would be.
@@ -72,7 +86,7 @@ class Market(multiprocessing.Process):
             with lockExternal:
                 externalFactors.value += 1
 
-    def interprete(self, value, price):
+    def interprete(self, restOrNeed, price, houseIdentifier ):
         """
         After the reception of a message through the message queue, we have to interprete it :
         Do the house need energy ? -> Do the globalneed needs to be increased ?
@@ -80,16 +94,17 @@ class Market(multiprocessing.Process):
         Necessity to implement semaphores to protect energybank and globalneed values.
         value : (HouseIdentifier,RestOrNeed)
         """
-        if value[1] < 0:  # The House NEEDS energy
+        mqHouse = sysv_ipc.MessageQueue(houseIdentifier)        
+        if restOrNeed < 0:  # The House NEEDS energy
             with lockGlobalNeed:
-                GlobalNeed.value -= value[1]
-            self.mq.send(-1 * value[1] * price, type=value[0])  # We send to the house the price it has to pay for the energy.
+                GlobalNeed.value -= restOrNeed
+            mqHouse.send(-1 * restOrNeed * price)  # We send to the house the price it has to pay for the energy.
 
 
         else:  # The house SELLS energy
             with lockPayable:
-                PayableEnergyBank.value += value[1]
-            self.mq.send(value[1] * price, type=value[0])  # We send to the house the money it earns selling the energy
+                PayableEnergyBank.value += restOrNeed[1]
+            mqHouse.send(restOrNeed * price)  # We send to the house the money it earns selling the energy
 
     def run(self):
 
@@ -98,54 +113,43 @@ class Market(multiprocessing.Process):
         NumberOfThreads = 10
         
         price = 100 #Price at the beginning of the simulation
-        externalFactors = threading.Value('i',0) #This is a counter of the disasters that occurs sometimes.    
-        lockExternal = threading.lock()
         
-        
-        GlobalNeed = threading.Value('i',0) #Energy wanted by the house (initialisation)
-        lockGlobalNeed = threading.lock() #Protection
-        
-        
-        PayableEnergyBank = threading.Value('i',0) #(initialisation)
-        lockPayable = threading.lock()       
+       
         #Message Passing definition : 
 
 
         
     
         while True:
-            while self.mq.current_messages >0 : #While there is data sent by the houses.
+            while self.mq.current_messages > 0 and Clock.Value == 0 : #While there is data sent by the houses.
+                
+                message, t = self.mq.receive()
+                value = message.decode()     
+                #Value : (HouseIdentifier,RestOrNeed)
+                houseIdentifier = value[0]
+                restOrNeed = value[1]
+                thread = threading.Thread(target=self.interprete, args=(self, restOrNeed, price, houseIdentifier))
+                thread.start()
+                                
                 with concurrent.futures.ThreadPoolExecutor(max_workers = NumberOfThreads) as executor: #Thread pool          
                     message, t = self.mq.receive()
                     value = message.decode() 
                     #Value : (HouseIdentifier,RestOrNeed)
                     
                     #We use a thread pool to interprete the messages of the message queue
-                    for result in executor.map(interprete, (value,price)):
+                    for result in executor.map(self.interprete, (value[1],price,value[0])):
                         pass
-    
+                
                     
             
-            if Clock.Value == 0 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
+            if Clock.Value == 1 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
                 #We have to acquire all the locks :
                 lockGlobalNeed.acquire()
                 lockPayable.acquire()
                 lockExternal.acquire()
             
                 PayableEnergyWanted = GlobalNeed.value #We consider that the free energy is distributed equally to all the houses in need. They will have to pay for the rest
-                price = priceCalculation(PayableEnergyWanted, PayableEnergyBank, externalFactors, price) #Using a linear model
-
-                still_msg = True
-                while still_msg:
-                    try:
-                        i, value = self.mq.receive()
-                        MqHouse = sysv_ipc.MessageQueue(i)
-                        prixMaison = price * value
-                        MqHouse.send(prixMaison)
-                    except:
-                        still_msg = False
-
-
+                price = self.priceCalculation(PayableEnergyWanted, PayableEnergyBank, externalFactors, price) #Using a linear model
     
                 PayableEnergyBank.value, GlobalNeed.value = 0
                 
@@ -154,4 +158,4 @@ class Market(multiprocessing.Process):
                 lockExternal.release()
                 
                 while Clock.Value == 0:
-                    pass  #Block 
+                    pass #Block 
