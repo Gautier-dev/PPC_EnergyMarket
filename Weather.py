@@ -10,10 +10,12 @@ class weather(multiprocessing.Process):
     Update weather state in the shared memory.
     return temperature, weather state: (1 sunny, 2 cloudy, 3 rain, 4 snow), sunlight
     """
-    def __init__(self, t):
+    def __init__(self, Weather, Clock, day):
         super().__init__()
-        self.t = t
+        self.t = day
         self.weather = Weather
+        self.clock = Clock
+
 
 
     def Temp_function(self):
@@ -38,12 +40,12 @@ class weather(multiprocessing.Process):
 
     def sunlight(self):
         Data = [62.5, 79.2, 128.9, 166, 193.8, 202.1, 212.2, 212.1, 167.9, 117.8, 67.7, 51.4]
-        jour_mois = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        NumberDayMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         for k in range(12):
-            cumule = 0
+            CumulativeDay = 0
             for i in range(k):
-                cumule += jour_mois[k]
-            if cumule < self.t <= cumule + jour_mois[k]:
+                CumulativeDay += NumberDayMonth[k]
+            if CumulativeDay < self.t <= CumulativeDay + NumberDayMonth[k]:
                 ecart_type = 0.15 * Data[k]
                 v = random.gauss(Data[k], ecart_type)
                 while (v > 16) and (v < 2):
@@ -52,11 +54,11 @@ class weather(multiprocessing.Process):
 
 
     def run(self):
-        if Clock.value == 0:
-            jour.value = jour + 1
+        if self.clock.value == 0:
+            self.t = self.t + 1
             self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
             self.weather[1] = self.sunlight()
-            while Clock.Value == 0:
+            while self.clock.value == 0:
                 pass
 
 
