@@ -13,6 +13,7 @@ import threading
 import sysv_ipc
 import signal
 import os
+import ast
 
 
 
@@ -92,13 +93,15 @@ class Market(multiprocessing.Process):
         if restOrNeed < 0:  # The House NEEDS energy
             with self.lockGlobalNeed:
                 self.globalNeed.value -= restOrNeed
-            mqHouse.send(-1 * restOrNeed * price)  # We send to the house the price it has to pay for the energy.
+            message = str(-1 * restOrNeed * price).encode()
+            mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
 
 
         else:  # The house SELLS energy
             with self.lockPayable:
                 self.energyBank.value += restOrNeed[1]
-            mqHouse.send(restOrNeed * price)  # We send to the house the money it earns selling the energy
+            message = str(restOrNeed * price).encode()
+            mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
 
     def run(self):
 
@@ -112,7 +115,8 @@ class Market(multiprocessing.Process):
         while True:
             while self.mq.current_messages > 0 and self.clock.Value == 0 : #While there is data sent by the houses.
                 
-                value, t = self.mq.receive()     
+                message, t = self.mq.receive()
+                value = ast.literal_eval(message.decode())
                 #Value : (HouseIdentifier,RestOrNeed)
                 houseIdentifier = value[0]
                 restOrNeed = value[1]
