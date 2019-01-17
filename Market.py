@@ -124,7 +124,7 @@ class Market(multiprocessing.Process):
                 thread = threading.Thread(target=self.interprete, args=(self, restOrNeed, price, houseIdentifier))
                 thread.start()
                     
-            
+            print(self.clock.value)
             if self.clock.Value == 1 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
                 if self.firstTime == 1:
                     self.firstTime = 0
