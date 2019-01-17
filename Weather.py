@@ -48,7 +48,7 @@ class Weather(multiprocessing.Process):
             if CumulativeDay < self.t <= CumulativeDay + NumberDayMonth[k]:
                 ecart_type = 0.15 * Data[k]
                 v = random.gauss(Data[k], ecart_type)
-                while (v > 16) and (v < 2):
+                while (v > 16) and (v < 0):
                     v = random.gauss(Data[k], ecart_type)
                 return v
 
