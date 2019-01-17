@@ -104,7 +104,7 @@ class Market(multiprocessing.Process):
             mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
 
     def run(self):
-
+        print('ok')
         external = self.externalProcess()
         signal.signal(signal.SIGINT, self.handler) #associate the SIGINT signal to the handler
         external.start()
@@ -113,6 +113,7 @@ class Market(multiprocessing.Process):
             
     
         while True:
+            print(self.mq.current_messages)
             while self.mq.current_messages > 0 and self.clock.Value == 0 : #While there is data sent by the houses.
                 print("Receiving houses' messages")
                 message, t = self.mq.receive()
@@ -132,14 +133,14 @@ class Market(multiprocessing.Process):
                     self.lockGlobalNeed.acquire()
                     self.lockPayable.acquire()
                     self.lockExternal.acquire()
-                
+                    print("lock")
                     payableEnergyWanted = self.globalNeed.value
                     totalPrice = price * payableEnergyWanted
                     price = self.priceCalculation(payableEnergyWanted, self.energyBank, self.externalFactors, price) #Using a linear model
                     
                     #Send information to the main process.
-                    display = "The price of the energy is : " + str(price) + ".\nThe number of disasters which occured today is : " + str(self.externalFactors.value) + ".\nThe price of the energy for the whole community is : " + str(totalPrice) + ".\n"
-                    self.pipe.send(display)                    
+                    display = [str(price), str(self.externalFactors.value), str(totalPrice)]
+                    self.pipe.send(display)
                     
                     self.energyBank.value, self.globalNeed.value, self.externalFactors.value = 0, 0, 0
                     

@@ -37,18 +37,18 @@ if __name__ == "__main__":
                 
     ###SHARED VALUES AND LOCKS
 
-    externalFactors = multiprocessing.Value('i',0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)    
+    externalFactors = multiprocessing.Value('i', 0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)
     lockExternal = multiprocessing.Lock() #Protection
             
-    globalNeed = multiprocessing.Value('i',0) #Energy wanted by the houses (used by the Market process) (initialisation)
+    globalNeed = multiprocessing.Value('i', 0) #Energy wanted by the houses (used by the Market process) (initialisation)
     lockGlobalNeed = threading.Lock() #Protection
         
-    payableEnergyBank = multiprocessing.Value('i',0) #Energy given by the houses (used by the Market process) (initialisation)
+    payableEnergyBank = multiprocessing.Value('i', 0) #Energy given by the houses (used by the Market process) (initialisation)
     lockPayable = threading.Lock() #Protection
     
-    clocker = multiprocessing.Value('i',1) #The clock is a shared variable : 0 = night, 1 = day
+    clocker = multiprocessing.Value('i', 1) #The clock is a shared variable : 0 = night, 1 = day
     
-    weather = multiprocessing.Array('i', [0,0]) #The weather is a shared array
+    weather = multiprocessing.Array('i', [0, 0]) #The weather is a shared array
     
     day = multiprocessing.Value('i', 0) #The date of today
     
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print("start market")
     marketProcess.start()
     
-    weatherProcess = Weather.Weather(weather,clocker,day)
+    weatherProcess = Weather.Weather(weather, clocker, day)
     print("start weather")
     weatherProcess.start()
     
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     tickProcess.start()
     
     while True:
-        if clocker.value == 0 :
+        if clocker.value == 0:
             while messageQueueHouse.current_messages > 0:
                 _,_ = messageQueueHouse.receive() #The "gifts" list have to be empty for the next day. The houses which want to sell their energy will answer the Market process by themselves.
             
