@@ -107,7 +107,7 @@ class House(multiprocessing.Process):
                 
                 #Waiting for the money / the bill.
                 while self.clock.value == 0:              
-                    if client_market.current_messages > 0 :                    
+                    if client_market.current_messages > 0:
                         message, t = client_market.receive()
                         value = message.decode()
                         self.Money = self.Money + value

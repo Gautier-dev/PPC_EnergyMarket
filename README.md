@@ -2,8 +2,8 @@
  Based on a "Day/night" cycle. It is defined by the Clock process.
     There is a lot of houses, defined by the House processes, and a Market process.
     The Market Process creates an External process.
-    The Weather Process is used to know how much energy the houses create (with the sunlight factor)...
-    ... and use (with the temperature factor).
+    The Weather Process is used to know how much energy the houses create thanks to  hours of sunlight per day and use thanks to the temperature.
+    The temperature and sunlight used by the Weather Process is based on real data from Paris.
     
     During the Day (Clock.value = 1) :
     The HOUSES calculate their energy consommation and production.
