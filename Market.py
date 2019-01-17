@@ -113,7 +113,7 @@ class Market(multiprocessing.Process):
             
     
         while True:
-            print(self.mq.current_messages)
+            print("message restant MQ Market : ", self.mq.current_messages)
             while self.mq.current_messages > 0 and self.clock.Value == 0 : #While there is data sent by the houses.
                 print("Receiving houses' messages")
                 message, t = self.mq.receive()
@@ -124,8 +124,8 @@ class Market(multiprocessing.Process):
                 thread = threading.Thread(target=self.interprete, args=(self, restOrNeed, price, houseIdentifier))
                 thread.start()
                     
-            print(self.clock.value)
-            if self.clock.Value == 1 : #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part 
+            print("Clock recupere dans market : ", self.clock.value)
+            if self.clock.Value == 1: #The value of the shared memory has been updated by the Clock : it is the turn of the Market to calculate its part
                 if self.firstTime == 1:
                     self.firstTime = 0
                 else:

@@ -104,5 +104,5 @@ if __name__ == "__main__":
             print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe price of the energy for the whole community is : {}.\n".format(result[0],result[1],result[2]))
             
             while clocker.value == 1:
-                print(1)
+                print("Attente nuit")
                 pass
