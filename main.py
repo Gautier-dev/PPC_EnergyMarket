@@ -8,7 +8,7 @@ import House
 import Weather
 import sysv_ipc
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     
     ###THE CONCEPT
     """
@@ -67,31 +67,35 @@ if __name__ == "__main__" :
     ###MAIN
 
     
-    numberOfHouses = 100    
+    numberOfHouses = 10
     
     marketProcess = Market.Market(externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather,child_conn)
+    print("start market")
     marketProcess.start()
     
     weatherProcess = Weather.Weather(weather,clocker,day)
+    print("start weather")
     weatherProcess.start()
     
-    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1,numberOfHouses+1)]
+    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1, numberOfHouses+1)]
+    print("start Houses")
     [a.start() for a in houses]
     
     tickProcess = Clock.Clock(clocker)
+    print("start clock")
     tickProcess.start()
     
-    while True :
+    while True:
         if clocker.value == 0 :
             while messageQueueHouse.current_messages > 0:
                 _,_ = messageQueueHouse.receive() #The "gifts" list have to be empty for the next day. The houses which want to sell their energy will answer the Market process by themselves.
             
             print("--NIGHT--")
 
-            while clocker.value == 0 :
+            while clocker.value == 0:
                 pass
         
-        if clocker.value == 1 :
+        if clocker.value == 1:
             
             print("--DAY--")            
             
@@ -99,5 +103,6 @@ if __name__ == "__main__" :
             #The parent process receive a message from the Market Process and prints it, using the "parent connection"
             print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe price of the energy for the whole community is : {}.\n".format(result[0],result[1],result[2]))
             
-            while clocker.value == 1 :
+            while clocker.value == 1:
+                print(1)
                 pass

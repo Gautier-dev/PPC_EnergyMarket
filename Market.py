@@ -114,7 +114,7 @@ class Market(multiprocessing.Process):
     
         while True:
             while self.mq.current_messages > 0 and self.clock.Value == 0 : #While there is data sent by the houses.
-                
+                print("Receiving houses' messages")
                 message, t = self.mq.receive()
                 value = ast.literal_eval(message.decode())
                 #Value : (HouseIdentifier,RestOrNeed)
@@ -141,7 +141,7 @@ class Market(multiprocessing.Process):
                     display = "The price of the energy is : " + str(price) + ".\nThe number of disasters which occured today is : " + str(self.externalFactors.value) + ".\nThe price of the energy for the whole community is : " + str(totalPrice) + ".\n"
                     self.pipe.send(display)                    
                     
-                    self.energyBank.value, self.globalNeed.value, self.externalFactors.value = 0
+                    self.energyBank.value, self.globalNeed.value, self.externalFactors.value = 0, 0, 0
                     
                     self.lockGlobalNeed.release()
                     self.lockPayable.release()
