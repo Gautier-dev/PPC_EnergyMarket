@@ -83,7 +83,7 @@ class House(multiprocessing.Process):
                                 self.lock.release()
                                 #We say to the house identified by "i" that we have taken some energy.
                                 message = str(value).encode()
-                                thankYou = sysv_ipc.MessageQueue(i, sysv_ipc.IPC_CREAT)
+                                thankYou = sysv_ipc.MessageQueue(i)
                                 thankYou.send(message)
                                 #The while loop will happen and just pass until the clock value changes.
                                 
@@ -93,7 +93,7 @@ class House(multiprocessing.Process):
                                 #No need to send another message to the global queue : all the energy given is used
                                 #We say to the house identified by "i" that we have taken some energy.
                                 message = str(value).encode()
-                                thankYou = sysv_ipc.MessageQueue(i, sysv_ipc.IPC_CREAT)
+                                thankYou = sysv_ipc.MessageQueue(i)
                                 thankYou.send(message)
                                 #The "while" loop will happen another time, to try to receive enough energy.
 
