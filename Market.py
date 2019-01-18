@@ -62,11 +62,9 @@ class Market(multiprocessing.Process):
         if PayableEnergyWanted == 0:
             factor = 1/2
         else:
-            factor = PayableEnergyWanted / PayableEnergyBank
+            factor = (PayableEnergyWanted / PayableEnergyBank)
         
-        #TODO : mdrrrr c'est naze (à faire à la fin)
-        
-        return (price * lamb + disasters) * factor  # "NotReallyAccurateModel" (tm)
+        return (price * lamb + disasters + factor)  # "NotReallyAccurateModel" (tm)
 
 
     def handler(self, sig, frame):
@@ -105,9 +103,7 @@ class Market(multiprocessing.Process):
             #print("message restant MQ Market : ", self.mq.current_messages)
             while self.mq.current_messages > 0 and self.clock.value == 0 : #While there is data sent by the houses.
                 message, t = self.mq.receive()
-                print(message)
                 value = ast.literal_eval(message.decode())
-                print(value)
                 #Value : (HouseIdentifier,RestOrNeed)
                 houseIdentifier = value[0]
                 restOrNeed = value[1]

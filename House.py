@@ -46,18 +46,12 @@ class House(multiprocessing.Process):
         return conso
 
     def run(self):
-        client = sysv_ipc.MessageQueue(-2)  # to send messages to the House Queue
-        client_market = sysv_ipc.MessageQueue(-1) #to send messages to the market
+        client = sysv_ipc.MessageQueue(-2)  # to send messages to the House Queue : the gifts of free energy
+        client_market = sysv_ipc.MessageQueue(-1) #to send messages to the market : the payable energy
         while True:
             
             #print("Clock recupere dans house : ", self.clock.value)
-            if self.clock.value == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the
-                # Houses to calculate their part
-                
-                #TODO : le nombre de maisons opérationnelles baisse le long du programme. Elles doivent se coincer quelque part.
-                #Preuve : ce flag qui est de moins en moins fréquent.
-                print("Cette maison est opérationnelle à ce tour.")
-                
+            if self.clock.value == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part        
                 self.Money += self.salary / 30  # The house win money with the work of the family 
                 created_energy = self.Production()
                 self.SurplusOrNeed = created_energy - self.consommation()
@@ -80,7 +74,7 @@ class House(multiprocessing.Process):
                 else:
                     # receive energy from other houses
                     while self.clock.value == 1:
-                        if self.SurplusOrNeed < 0:
+                        if self.SurplusOrNeed < 0 and client.current_messages > 0 :
                             self.lock.acquire()
                             msg, t = client.receive()
                             self.lock.release()
@@ -91,9 +85,12 @@ class House(multiprocessing.Process):
                                 self.SurplusOrNeed = 0                                
                                 #Update of the "offer" in the global queue :                                
                                 message = str((i, value - self.SurplusOrNeed)).encode()
-                                self.lock.acquire()
+                                
+                                #The locking is disabled due of deadlocks : we consider that the "giver" does not have to wait to acquire the lock.
+                                #self.lock.acquire()
                                 client.send(message)
-                                self.lock.release()
+                                #self.lock.release()
+                                
                                 #We say to the house identified by "i" that we have taken some energy.
                                 message = str(value).encode()
                                 thankYou = sysv_ipc.MessageQueue(i)
@@ -121,12 +118,11 @@ class House(multiprocessing.Process):
                 
                 #Waiting for the money / the bill.
                 while self.clock.value == 0:              
-                    if client_market.current_messages > 0:
+                    if self.MqHouse.current_messages > 0:
                         message, t = self.MqHouse.receive() #The market sends the data to the Mq of the house
                         value = float(message.decode())
                         self.Money = self.Money + value
-                        print(self.Money,self.i,value)
-                        if self.Money == 0 :
+                        if self.Money < 0 :
                             print("House {} does not have money anymore ! Giving it 500 $.".format(self.i))
                         while self.clock.value == 0: 
                             pass
