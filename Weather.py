@@ -4,8 +4,8 @@ import multiprocessing
 
 class Weather(multiprocessing.Process):
     """
-    Update weather state in the shared memory.
-    return temperature, sunlight
+    Update weather state and day in the shared memory.
+    Compute temperature and sunlight
     """
     def __init__(self, Weather, Clock, day):
         super().__init__()
@@ -61,6 +61,8 @@ class Weather(multiprocessing.Process):
         """
         if self.clock.value == 0:
             self.day = self.day + 1  # change the day
+            if self.day > 365:
+                self.day = 1
             self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
             self.weather[1] = self.sunlight()
             while self.clock.value == 0:
