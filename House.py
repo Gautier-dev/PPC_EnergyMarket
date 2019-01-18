@@ -25,7 +25,7 @@ class House(multiprocessing.Process):
         self.Behavior = Behavior
         
         self.Money = random.gauss(3000, 1000)
-        self.salary = random.gauss(2200, 700)
+        self.income = random.gauss(2200, 700)
         
         #Pointers of the shared memories
         self.clock = Clock
@@ -52,7 +52,7 @@ class House(multiprocessing.Process):
             
             #print("Clock recupere dans house : ", self.clock.value)
             if self.clock.value == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part        
-                self.Money += self.salary / 30  # The house win money with the work of the family 
+                self.Money += self.income / 30  # The house win money with the work of the family
                 created_energy = self.Production()
                 self.SurplusOrNeed = created_energy - self.consommation()
                 #print(self.SurplusOrNeed)
@@ -78,7 +78,7 @@ class House(multiprocessing.Process):
                             self.lock.acquire()
                             msg, t = client.receive()
                             self.lock.release()
-                            i, value = literal_eval(msg.decode())
+                            i, value = literal_eval(msg.decode())  # The house i can give the amount of energy value
                             
                             #There is more energy than needed / just enough
                             if value >= self.SurplusOrNeed:
@@ -113,7 +113,7 @@ class House(multiprocessing.Process):
                 #Sending the message
                 if self.Behavior == 2 or self.Behavior == 3:
                     if self.SurplusOrNeed != 0:
-                        message = str((self.i,self.SurplusOrNeed)).encode()
+                        message = str((self.i, self.SurplusOrNeed)).encode()
                         client_market.send(message)
                 
                 #Waiting for the money / the bill.
@@ -122,7 +122,7 @@ class House(multiprocessing.Process):
                         message, t = self.MqHouse.receive() #The market sends the data to the Mq of the house
                         value = float(message.decode())
                         self.Money = self.Money + value
-                        if self.Money < 0 :
+                        if self.Money < 0:
                             print("House {} does not have money anymore ! Giving it 500 $.".format(self.i))
                         while self.clock.value == 0: 
                             pass
