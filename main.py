@@ -50,7 +50,7 @@ if __name__ == "__main__":
     
     weather = multiprocessing.Array('f', [3.3, 62.5]) #The weather is a shared array
     
-    day = multiprocessing.Value('i', 0) #The date of today
+    day = multiprocessing.Value('i', 1) #The date of today
     
     
     ###COMMUNICATION

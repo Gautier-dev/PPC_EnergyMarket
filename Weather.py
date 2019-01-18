@@ -27,7 +27,7 @@ class Weather(multiprocessing.Process):
             add_day_up = 0
             for i in range(k):
                 add_day_up += NumberDayMonth[k]
-            if add_day_up < self.day <= add_day_up + NumberDayMonth[k]:
+            if add_day_up < self.day.value <= add_day_up + NumberDayMonth[k]:
                 standard_deviation = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
                 v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
                 while (v > DataTemp[k][2]) and (v < DataTemp[k][1]):
@@ -46,9 +46,10 @@ class Weather(multiprocessing.Process):
             add_day_up = 0
             for i in range(k):
                 add_day_up += NumberDayMonth[k]
-            if add_day_up < self.day <= add_day_up + NumberDayMonth[k]:
-                standard_deviation = 0.15 * Data[k]
-                v = random.gauss(Data[k], standard_deviation)
+            if add_day_up < self.day.value <= add_day_up + NumberDayMonth[k]:
+                hours_per_day = Data[k]/NumberDayMonth[k]
+                standard_deviation = 0.15 * hours_per_day
+                v = random.gauss(hours_per_day, standard_deviation)
                 while (v > 16) and (v < 0):
                     v = random.gauss(Data[k], standard_deviation)
                 return v
@@ -58,14 +59,17 @@ class Weather(multiprocessing.Process):
         """
 
         :return: run the process : change the day, temperature, sunlight according to the clock
+
         """
-        if self.clock.value == 0:
-            self.day = self.day + 1  # change the day
-            if self.day > 365:
-                self.day = 1
-            self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
-            self.weather[1] = self.sunlight()
-            while self.clock.value == 0:
-                pass
+        while True:
+            if self.clock.value == 0:
+                self.day.value += 1  # change the day
+                if self.day.value > 365:
+                    self.day.value = 1
+                self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
+                self.weather[1] = self.sunlight()
+                print("day : {}, Sunlight : {}, Temperature: {}".format(self.day.value, self.weather[1], self.weather[0]))
+                while self.clock.value == 0:
+                    pass
 
 

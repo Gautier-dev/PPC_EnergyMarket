@@ -12,7 +12,7 @@ class House(multiprocessing.Process):
 
         #Randomisation of the house (income, consommation, production...)        
         self.consommationFactor = 50 + 100 * random.random()
-        self.productionFactor = random.random()
+        self.productionFactor = 100 * random.random()
         self.lock = LockMaison
 
         p = random.random()
@@ -55,7 +55,9 @@ class House(multiprocessing.Process):
                 self.Money += self.income / 30  # The house win money with the work of the family
                 created_energy = self.Production()
                 self.SurplusOrNeed = created_energy - self.consommation()
-                #print(self.SurplusOrNeed)
+                print("house {} have {} and earn {}, its energy balance for the day is {}". format(self.i, self.Money, self.income, self.SurplusOrNeed))
+                #  print(self.weather[0], self.weather[1])
+                #  print(self.SurplusOrNeed)
                 
                 if self.SurplusOrNeed > 0 and self.Behavior != 3:
                     #Give Energy to other houses if we want to give it.
