@@ -8,7 +8,6 @@ class Clock(multiprocessing.Process):
         super().__init__()
         self.clock = clock #Pointer of the shared memory
     def run(self):
-        Clock=self.clock
         while True:
-            time.sleep(2)
-            Clock.value = (Clock.value + 1) % 2
+            time.sleep(5)
+            self.clock.value = (self.clock.value + 1) % 2

@@ -8,7 +8,7 @@ import House
 import Weather
 import sysv_ipc
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     
     ###THE CONCEPT
     """
@@ -37,18 +37,18 @@ if __name__ == "__main__" :
                 
     ###SHARED VALUES AND LOCKS
 
-    externalFactors = multiprocessing.Value('i',0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)    
+    externalFactors = multiprocessing.Value('i', 0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)
     lockExternal = multiprocessing.Lock() #Protection
             
-    globalNeed = multiprocessing.Value('i',0) #Energy wanted by the houses (used by the Market process) (initialisation)
+    globalNeed = multiprocessing.Value('f', 0) #Energy wanted by the houses (used by the Market process) (initialisation)
     lockGlobalNeed = threading.Lock() #Protection
         
-    payableEnergyBank = multiprocessing.Value('i',0) #Energy given by the houses (used by the Market process) (initialisation)
+    payableEnergyBank = multiprocessing.Value('f', 0) #Energy given by the houses (used by the Market process) (initialisation)
     lockPayable = threading.Lock() #Protection
     
-    clocker = multiprocessing.Value('i',1) #The clock is a shared variable : 0 = night, 1 = day
+    clocker = multiprocessing.Value('i', 1) #The clock is a shared variable : 0 = night, 1 = day
     
-    weather = multiprocessing.Array('i', [0,0]) #The weather is a shared array
+    weather = multiprocessing.Array('f', [3.3, 62.5]) #The weather is a shared array
     
     day = multiprocessing.Value('i', 0) #The date of today
     
@@ -67,37 +67,52 @@ if __name__ == "__main__" :
     ###MAIN
 
     
-    numberOfHouses = 100    
+    numberOfHouses = 10
     
     marketProcess = Market.Market(externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather,child_conn)
+    print("start market")
     marketProcess.start()
     
-    weatherProcess = Weather.Weather(weather,clocker,day)
+    weatherProcess = Weather.Weather(weather, clocker, day)
+    print("start weather")
     weatherProcess.start()
     
-    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1,numberOfHouses+1)]
+    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1, numberOfHouses+1)]
+    print("start Houses")
     [a.start() for a in houses]
     
     tickProcess = Clock.Clock(clocker)
+    print("start clock")
     tickProcess.start()
     
-    while True :
-        if clocker.value == 0 :
+    firstTime = True #Used for the first day (the market isn't up)
+    
+    while True:
+        if clocker.value == 0:
             while messageQueueHouse.current_messages > 0:
                 _,_ = messageQueueHouse.receive() #The "gifts" list have to be empty for the next day. The houses which want to sell their energy will answer the Market process by themselves.
             
             print("--NIGHT--")
 
-            while clocker.value == 0 :
+            while clocker.value == 0:
                 pass
         
-        if clocker.value == 1 :
+        if clocker.value == 1:
             
-            print("--DAY--")            
+            print("--DAY--")  
             
-            result = parent_conn.recv()
-            #The parent process receive a message from the Market Process and prints it, using the "parent connection"
-            print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe price of the energy for the whole community is : {}.\n".format(result[0],result[1],result[2]))
+            """
             
-            while clocker.value == 1 :
+            #TODO : faire marcher ça (ça print direct dans Market pour debug mais on devrait retenter de faire passer par une pipe)
+            
+            if firstTime == False:
+                result = parent_conn.recv()
+                #The parent process receive a message from the Market Process and prints it, using the "parent connection"
+                print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe price of the energy for the whole community is : {}.\n".format(result[0],result[1],result[2]))
+                
+            else:
+                firstTime = False
+            """
+                
+            while clocker.value == 1:
                 pass

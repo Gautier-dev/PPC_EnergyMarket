@@ -2,17 +2,14 @@
 import random
 import multiprocessing
 
-jour = multiprocessing.Value('i', 0)
-Weather = multiprocessing.Array('i', [0, 0])
-
 class Weather(multiprocessing.Process):
     """
     Update weather state in the shared memory.
-    return temperature, weather state: (1 sunny, 2 cloudy, 3 rain, 4 snow), sunlight
+    return temperature, sunlight
     """
     def __init__(self, Weather, Clock, day):
         super().__init__()
-        self.t = day
+        self.day = day
         self.weather = Weather
         self.clock = Clock
 
@@ -20,42 +17,50 @@ class Weather(multiprocessing.Process):
 
     def Temp_function(self):
         """
-        return new temperature according to the day temperature of a weather station stored in data
+        return new temperature according to data from the city of Paris
         """
         DataTemp = [[3.3, 0.7, 6], [4.2, 1.2, 7.3], [7.8, 3.4, 12.2], [10.8, 5.8, 15.9],
                     [14.3, 8.9, 19.8], [17.5, 12.1, 22.9], [19.4, 14.1, 24.8], [19.1, 13.9, 24.3],
                     [16.4, 11.5, 21.3], [11.6, 7.6, 15.7], [7.2, 4.3, 10.1], [4.2, 1.8, 6.7]]
-        jour_mois = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        NumberDayMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         for k in range(12):
-            cumule = 0
+            add_day_up = 0
             for i in range(k):
-                cumule += jour_mois[k]
-            if cumule < self.t <= cumule + jour_mois[k]:
-                ecart_type = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
-                v = random.gauss(DataTemp[k][1], 0.3*ecart_type)
+                add_day_up += NumberDayMonth[k]
+            if add_day_up < self.day <= add_day_up + NumberDayMonth[k]:
+                standard_deviation = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
+                v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
                 while (v > DataTemp[k][2]) and (v < DataTemp[k][1]):
-                    v = random.gauss(DataTemp[k][1], 0.3*ecart_type)
+                    v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
                 return v
 
 
     def sunlight(self):
+        """
+
+        :return: number of hours of sunlight in a given day. Data from Paris
+        """
         Data = [62.5, 79.2, 128.9, 166, 193.8, 202.1, 212.2, 212.1, 167.9, 117.8, 67.7, 51.4]
         NumberDayMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         for k in range(12):
-            CumulativeDay = 0
+            add_day_up = 0
             for i in range(k):
-                CumulativeDay += NumberDayMonth[k]
-            if CumulativeDay < self.t <= CumulativeDay + NumberDayMonth[k]:
-                ecart_type = 0.15 * Data[k]
-                v = random.gauss(Data[k], ecart_type)
-                while (v > 16) and (v < 2):
-                    v = random.gauss(Data[k], ecart_type)
+                add_day_up += NumberDayMonth[k]
+            if add_day_up < self.day <= add_day_up + NumberDayMonth[k]:
+                standard_deviation = 0.15 * Data[k]
+                v = random.gauss(Data[k], standard_deviation)
+                while (v > 16) and (v < 0):
+                    v = random.gauss(Data[k], standard_deviation)
                 return v
 
 
     def run(self):
+        """
+
+        :return: run the process : change the day, temperature, sunlight according to the clock
+        """
         if self.clock.value == 0:
-            self.t = self.t + 1
+            self.day = self.day + 1  # change the day
             self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
             self.weather[1] = self.sunlight()
             while self.clock.value == 0:
