@@ -51,6 +51,8 @@ if __name__ == "__main__":
     weather = multiprocessing.Array('f', [3.3, 62.5]) #The weather is a shared array
     
     day = multiprocessing.Value('i', 1) #The date of today
+
+    numberOfHouses = 10
     
     
     ###COMMUNICATION
@@ -58,61 +60,80 @@ if __name__ == "__main__":
     messageQueueHouse = sysv_ipc.MessageQueue(-2, sysv_ipc.IPC_CREAT) #Message queue used by all the houses.
     #This message queue contains the "gifts" of energy. The one which is given and not payable.
     lockHouse = multiprocessing.Lock()#Protection
-    
-    parent_conn, child_conn = multiprocessing.Pipe() #Création of the pipe between main process and Market Process.
-    #The pipe will allow to display data about the simulation.
 
+    # The pipes will allow to display data about the simulation.
+
+    #  Market pipe
+    main_conn_market, market_conn = multiprocessing.Pipe() #Création of the pipe between main process and Market Process.
+
+    #  houses pipe
+    houses_pipes = [multiprocessing.Pipe() for i in range(numberOfHouses)]
 
 
     ###MAIN
 
     
-    numberOfHouses = 10
+
     
-    marketProcess = Market.Market(externalFactors,lockExternal,globalNeed,lockGlobalNeed,payableEnergyBank,lockPayable,clocker,weather,child_conn)
-    print("start market")
+    marketProcess = Market.Market(externalFactors, lockExternal, globalNeed, lockGlobalNeed, payableEnergyBank, lockPayable, clocker, weather, market_conn)
+    print("Starting market")
     marketProcess.start()
     
     weatherProcess = Weather.Weather(weather, clocker, day)
-    print("start weather")
+    print("Starting weather")
     weatherProcess.start()
     
-    houses = [House.House(i,clocker,weather,lockHouse) for i in range (1, numberOfHouses+1)]
-    print("start Houses")
-    [a.start() for a in houses]
+    houses = [House.House(i, clocker, weather, lockHouse, houses_pipes[i][1]) for i in range(numberOfHouses)]
+    print("Starting every Houses")
+    for k in houses:
+        k.start()
     
     tickProcess = Clock.Clock(clocker)
-    print("start clock")
+    print("Starting the clock")
     tickProcess.start()
     
     firstTime = True #Used for the first day (the market isn't up)
     
     while True:
         if clocker.value == 0:
-            while messageQueueHouse.current_messages > 0:
-                _,_ = messageQueueHouse.receive() #The "gifts" list have to be empty for the next day. The houses which want to sell their energy will answer the Market process by themselves.
             
             print("--NIGHT--")
+
+            while messageQueueHouse.current_messages > 0:
+                _, _ = messageQueueHouse.receive()  # The "gifts" list have to be empty for the next day. The houses which want to sell their energy will answer the Market process by themselves.
+
+            print("values for the day {} : temperature will be {:.3} and it will have {:.3} hours of sunlight".format(day.value, weather[0], weather[1]))
 
             while clocker.value == 0:
                 pass
         
         if clocker.value == 1:
             
-            print("--DAY--")  
-            
-            """
-            
-            #TODO : faire marcher ça (ça print direct dans Market pour debug mais on devrait retenter de faire passer par une pipe)
-            
-            if firstTime == False:
-                result = parent_conn.recv()
-                #The parent process receive a message from the Market Process and prints it, using the "parent connection"
-                print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe price of the energy for the whole community is : {}.\n".format(result[0],result[1],result[2]))
-                
+            print("--DAY--")
+
+            if not (firstTime):
+
+                #  The main process receive a message from the different Processes and prints it, using the "parent connection"
+                result_market = main_conn_market.recv()
+
+                print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe "
+                      "price of the energy for the whole community is : {}.\n".format(result_market[0],
+                                                                                      result_market[1],
+                                                                                      result_market[2]))
+
+
             else:
                 firstTime = False
-            """
-                
+
+            for k in range(numberOfHouses):
+                #todo : je sais pas pourquoi ca ne fonctionne pas, les valeurs des maisons ne changent pas
+                i = houses_pipes[k][0].recv()
+                print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
+                      .format(i, houses[i].Money, houses[i].income, houses[i].SurplusOrNeed))
+
             while clocker.value == 1:
                 pass
+
+
+
+

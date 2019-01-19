@@ -130,11 +130,11 @@ class Market(multiprocessing.Process):
 
                     price = self.priceCalculation(payableEnergyWanted, self.energyBank.value, self.externalFactors.value, price) #Using a linear model
                     
-                    #  Print information
+                    #  Print information by sending them through a pipe to the main process
                     result = [str(price), str(self.externalFactors.value), str(totalPrice)]
-                    print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe "
-                          "price of the energy for the whole community is : {}.\n".format(result[0], result[1], result[2]))
-                    #  self.pipe.send(display)
+
+                    self.pipe.send(result)
+                    #self.pipe.close()
 
                     #  Reset of these values everyday
                     self.energyBank.value, self.globalNeed.value, self.externalFactors.value = 0, 0, 0

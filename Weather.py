@@ -29,6 +29,7 @@ class Weather(multiprocessing.Process):
                 add_day_up += NumberDayMonth[k]
             if add_day_up < self.day.value <= add_day_up + NumberDayMonth[k]:
                 standard_deviation = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
+                #  Generate a value according to a Normal distribution around the mean
                 v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
                 while (v > DataTemp[k][2]) and (v < DataTemp[k][1]):
                     v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
@@ -48,6 +49,7 @@ class Weather(multiprocessing.Process):
                 add_day_up += NumberDayMonth[k]
             if add_day_up < self.day.value <= add_day_up + NumberDayMonth[k]:
                 hours_per_day = Data[k]/NumberDayMonth[k]
+                #  Generate a value according to a Normal distribution around the mean
                 standard_deviation = 0.15 * hours_per_day
                 v = random.gauss(hours_per_day, standard_deviation)
                 while (v > 16) and (v < 0):
@@ -68,7 +70,7 @@ class Weather(multiprocessing.Process):
                     self.day.value = 1
                 self.weather[0] = self.Temp_function()  # Updates the shared memory for all the processes.
                 self.weather[1] = self.sunlight()
-                print("day : {}, Sunlight : {}, Temperature: {}".format(self.day.value, self.weather[1], self.weather[0]))
+                #print(self.day.value, self.weather[0], self.weather[1])
                 while self.clock.value == 0:
                     pass
 

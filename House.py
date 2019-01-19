@@ -5,7 +5,7 @@ from ast import literal_eval
 
 
 class House(multiprocessing.Process):
-    def __init__(self, i, Clock, Weather, LockMaison):
+    def __init__(self, i, Clock, Weather, LockMaison, pipe):
         super().__init__()
         self.i = i
         self.SurplusOrNeed = 0
@@ -31,6 +31,8 @@ class House(multiprocessing.Process):
         self.clock = Clock
         self.weather = Weather
 
+        self.pipe = pipe
+
         
         #Message queue of the house
         self.MqHouse = sysv_ipc.MessageQueue(self.i, sysv_ipc.IPC_CREAT)
@@ -51,13 +53,13 @@ class House(multiprocessing.Process):
         while True:
             
             #print("Clock recupere dans house : ", self.clock.value)
-            if self.clock.value == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part        
-                self.Money += self.income / 30  # The house win money with the work of the family
+            if self.clock.value == 1:# The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part
+                print(self.i, self.Money)
+                self.Money += self.income / 30# The house win money with the work of the family
                 created_energy = self.Production()
                 self.SurplusOrNeed = created_energy - self.consommation()
-                print("house {} have {} and earn {}, its energy balance for the day is {}". format(self.i, self.Money, self.income, self.SurplusOrNeed))
-                #  print(self.weather[0], self.weather[1])
-                #  print(self.SurplusOrNeed)
+
+                self.pipe.send(self.i)
                 
                 if self.SurplusOrNeed > 0 and self.Behavior != 3:
                     #Give Energy to other houses if we want to give it.
