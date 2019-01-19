@@ -7,6 +7,7 @@ import Clock
 import House
 import Weather
 import sysv_ipc
+import matplotlib.pyplot
 
 if __name__ == "__main__":
     
@@ -93,6 +94,12 @@ if __name__ == "__main__":
     tickProcess.start()
     
     firstTime = True #Used for the first day (the market isn't up)
+
+    # For the graph
+    dayG = []
+    priceG = []
+
+    housesG = [[] for k in range(numberOfHouses)]
     
     while True:
         if clocker.value == 0:
@@ -118,17 +125,32 @@ if __name__ == "__main__":
 
                 print("The price of the energy is : {}.\nThe number of disasters which occured today is : {}.\nThe "
                       "price of the energy for the whole community is : {}.\n".format(result_market[0],
-                                                                                      result_market[1],
-                                                                                      result_market[2]))
+                                                                                      result_market[1],result_market[2]))
 
+                for k in range(numberOfHouses):
+                    tab = houses_pipes[k][0].recv()
+                    print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
+                          .format(tab[0], tab[1], tab[2], tab[3]))
+                    housesG[k].append(tab[1])
+                dayG.append(day.value)
+                priceG.append(result_market[0])
+
+                matplotlib.pyplot.clf()
+                matplotlib.pyplot.subplot(121)
+                matplotlib.pyplot.title("values for the day {} : temperature will be {:.3} and it will have {:.3} hours of sunlight".format(day.value, weather[0], weather[1]))
+                matplotlib.pyplot.plot(dayG, priceG, 'r--')
+                matplotlib.pyplot.subplot(122)
+                matplotlib.pyplot.title("houses")
+                matplotlib.pyplot.plot(dayG, housesG[0], 'r', dayG, housesG[1], 'b', dayG, housesG[2], 'y')  #todo toutes les maisons
+
+                matplotlib.pyplot.show()
 
             else:
                 firstTime = False
 
-            for k in range(numberOfHouses):
-                tab = houses_pipes[k][0].recv()
-                print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
-                      .format(tab[0], tab[1], tab[2], tab[3]))
+
+
+
 
             while clocker.value == 1:
                 pass
