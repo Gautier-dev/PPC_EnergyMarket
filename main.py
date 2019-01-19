@@ -48,7 +48,7 @@ if __name__ == "__main__":
     
     clocker = multiprocessing.Value('i', 1) #The clock is a shared variable : 0 = night, 1 = day
     
-    weather = multiprocessing.Array('f', [3.3, 62.5]) #The weather is a shared array
+    weather = multiprocessing.Array('f', [3.3, 62.5/31]) #The weather is a shared array
     
     day = multiprocessing.Value('i', 1) #The date of today
 
@@ -126,10 +126,9 @@ if __name__ == "__main__":
                 firstTime = False
 
             for k in range(numberOfHouses):
-                #todo : je sais pas pourquoi ca ne fonctionne pas, les valeurs des maisons ne changent pas
-                i = houses_pipes[k][0].recv()
+                tab = houses_pipes[k][0].recv()
                 print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
-                      .format(i, houses[i].Money, houses[i].income, houses[i].SurplusOrNeed))
+                      .format(tab[0], tab[1], tab[2], tab[3]))
 
             while clocker.value == 1:
                 pass

@@ -8,7 +8,7 @@ class House(multiprocessing.Process):
     def __init__(self, i, Clock, Weather, LockMaison, pipe):
         super().__init__()
         self.i = i
-        self.SurplusOrNeed = 0
+        self.EnergyBalance = 0
 
         #Randomisation of the house (income, consommation, production...)        
         self.consommationFactor = 50 + 100 * random.random()
@@ -54,17 +54,16 @@ class House(multiprocessing.Process):
             
             #print("Clock recupere dans house : ", self.clock.value)
             if self.clock.value == 1:# The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part
-                print(self.i, self.Money)
+
                 self.Money += self.income / 30# The house win money with the work of the family
                 created_energy = self.Production()
-                self.SurplusOrNeed = created_energy - self.consommation()
-
+                self.EnergyBalance = created_energy - self.consommation()
                 #   alert the main process that it needs to print data now
-                self.pipe.send(self.i)
+                self.pipe.send([self.i, self.Money, self.income, self.EnergyBalance])
                 
-                if self.SurplusOrNeed > 0 and self.Behavior != 3:
+                if self.EnergyBalance > 0 and self.Behavior != 3:
                     #Give Energy to other houses if we want to give it.
-                    message = str((self.i, self.SurplusOrNeed)).encode()
+                    message = str((self.i, self.EnergyBalance)).encode()
                     message.decode()
                     client.send(message)  # Send its rest to the House Queue if giver
                     
@@ -73,23 +72,23 @@ class House(multiprocessing.Process):
                         if self.MqHouse.current_messages != 0:
                             message, t = self.MqHouse.receive()
                             value = message.decode()
-                            self.SurplusOrNeed -= float(value)
+                            self.EnergyBalance -= float(value)
                 
 
                 else:
                     # receive energy from other houses
                     while self.clock.value == 1:
-                        if self.SurplusOrNeed < 0 and client.current_messages > 0 :
+                        if self.EnergyBalance < 0 and client.current_messages > 0 :
                             self.lock.acquire()
                             msg, t = client.receive()
                             self.lock.release()
                             i, value = literal_eval(msg.decode())  # The house i can give the amount of energy value
                             
                             #There is more energy than needed / just enough
-                            if value >= self.SurplusOrNeed:
-                                self.SurplusOrNeed = 0                                
+                            if value >= self.EnergyBalance:
+                                self.EnergyBalance = 0
                                 #Update of the "offer" in the global queue :                                
-                                message = str((i, value - self.SurplusOrNeed)).encode()
+                                message = str((i, value - self.EnergyBalance)).encode()
                                 
                                 #The locking is disabled due of deadlocks : we consider that the "giver" does not have to wait to acquire the lock.
                                 #self.lock.acquire()
@@ -104,7 +103,7 @@ class House(multiprocessing.Process):
                                 
                             #There is not enough energy
                             else:
-                                self.SurplusOrNeed = 0
+                                self.EnergyBalance = 0
                                 #No need to send another message to the global queue : all the energy given is used
                                 #We say to the house identified by "i" that we have taken some energy.
                                 message = str(value).encode()
@@ -117,8 +116,8 @@ class House(multiprocessing.Process):
                 
                 #Sending the message
                 if self.Behavior == 2 or self.Behavior == 3:
-                    if self.SurplusOrNeed != 0:
-                        message = str((self.i, self.SurplusOrNeed)).encode()
+                    if self.EnergyBalance != 0:
+                        message = str((self.i, self.EnergyBalance)).encode()
                         client_market.send(message)
                 
                 #Waiting for the money / the bill.
