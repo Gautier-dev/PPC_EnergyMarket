@@ -59,6 +59,7 @@ class House(multiprocessing.Process):
                 created_energy = self.Production()
                 self.SurplusOrNeed = created_energy - self.consommation()
 
+                #   alert the main process that it needs to print data now
                 self.pipe.send(self.i)
                 
                 if self.SurplusOrNeed > 0 and self.Behavior != 3:
