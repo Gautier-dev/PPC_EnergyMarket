@@ -8,34 +8,10 @@ import House
 import Weather
 import sysv_ipc
 import matplotlib.pyplot
+import tkinter
 
 if __name__ == "__main__":
-    
-    ###THE CONCEPT
-    """
-    Based on a "Day/night" cycle. It is defined by the Clock process.
-    There is a lot of houses, defined by the House processes, and a Market process.
-    The Market Process creates an External process.
-    The Weather Process is used to know how much energy the houses create (with the enlightment factor)...
-    ... and use (with the temperature factor).
-    
-    On the Day (Clock.value = 1) :
-    The HOUSES calculate their energy consommation and production.
-    The HOUSES THAT WANT TO GIVE ENERGY communicate, through the message queue "messageQueueHouses", the energy they want to give.
-    The HOUSES THAT WANT TO RECEIVE ENERGY are picking messages from the message queue (first arrived, first served), and send a message through the giver private message queue.
-    The HOUSES THAT GIVES ENERGY adapt the amount of energy they have.
-    The MARKET calculates the price of the energy if this is not the first day.
-    
-    On the Night (Clock.value = 0) :
-    The HOUSES send to the market their energy need OR their extra energy amount.
-    The MARKET sends to the houses the money they have to pay OR the money they earn.
-    
-    Everytime :
-    The EXTERNAL process can, at any moment, signal a disaster to the market.
-    The MAIN process deliver the user some data to follow the evolution of the events.
-    
-    """
-                
+
     ###SHARED VALUES AND LOCKS
 
     externalFactors = multiprocessing.Value('i', 0) #This is a counter of the disasters that occurs sometimes (used by the market and the external processes) (initialisation)
@@ -140,7 +116,6 @@ if __name__ == "__main__":
 
                 matplotlib.pyplot.title("values for the day {} : temperature will be {:.3} and it will have {:.3} hours of sunlight".format(day.value, weather[0], weather[1]))
                 matplotlib.pyplot.plot(dayG, priceG, 'r--')
-                matplotlib.pyplot.axis([0, day.value, 0, result_market[0]])
                 matplotlib.pyplot.subplot(122)
                 matplotlib.pyplot.title("houses")
                 matplotlib.pyplot.plot(dayG, housesG[0], 'r', dayG, housesG[1], 'b', dayG, housesG[2], 'y')  #todo toutes les maisons

@@ -11,13 +11,15 @@ class House(multiprocessing.Process):
         self.EnergyBalance = 0
 
         #Randomisation of the house (income, consommation, production...)
-
-        self.consommationFactor = random.random()
+        person = random.gauss(2, 1)
+        while person < 0:
+            person = random.gauss(2, 1)
+        self.Number_of_People = person
 
         #houses have 5 m2 of solar panels on average
-        area = random.gauss(10, 5)
+        area = random.gauss(6, 5)
         while area < 0:
-            area = random.gauss(10, 5)
+            area = random.gauss(6, 5)
         self.area_of_solar_panels = area
         self.lock = LockMaison
 
@@ -51,15 +53,14 @@ class House(multiprocessing.Process):
         
     def consommation(self):
         """
-        We assume people don't have Air conditioning when it's too hot
+        We assume people don't have Air conditioning when it's too hot. Each person consume 3kwh on average and
+        average temp at paris is 11. We assume that when temperature is above 25, each person consumes 0.5 kwh
         :return: a value that is inversely proportional to temperature
         """
-        if self.weather[0] == 0:
-            return 20
-        elif self.weather[0] > 25:
-            return 1 + self.consommationFactor
+        if self.weather[0] > 25:
+            return 0.5 * self.Number_of_People
         else:
-            return 20
+            return (5 - 0.18 * self.weather[0]) * self.Number_of_People
 
 
 
