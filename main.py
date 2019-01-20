@@ -137,8 +137,10 @@ if __name__ == "__main__":
 
                 matplotlib.pyplot.clf()
                 matplotlib.pyplot.subplot(121)
+
                 matplotlib.pyplot.title("values for the day {} : temperature will be {:.3} and it will have {:.3} hours of sunlight".format(day.value, weather[0], weather[1]))
                 matplotlib.pyplot.plot(dayG, priceG, 'r--')
+                matplotlib.pyplot.axis([0, day.value, 0, result_market[0]])
                 matplotlib.pyplot.subplot(122)
                 matplotlib.pyplot.title("houses")
                 matplotlib.pyplot.plot(dayG, housesG[0], 'r', dayG, housesG[1], 'b', dayG, housesG[2], 'y')  #todo toutes les maisons

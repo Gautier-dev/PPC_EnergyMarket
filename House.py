@@ -10,9 +10,15 @@ class House(multiprocessing.Process):
         self.i = i
         self.EnergyBalance = 0
 
-        #Randomisation of the house (income, consommation, production...)        
-        self.consommationFactor = 50 + 100 * random.random()
-        self.productionFactor = 100 * random.random()
+        #Randomisation of the house (income, consommation, production...)
+
+        self.consommationFactor = random.random()
+
+        #houses have 5 m2 of solar panels on average
+        area = random.gauss(10, 5)
+        while area < 0:
+            area = random.gauss(10, 5)
+        self.area_of_solar_panels = area
         self.lock = LockMaison
 
         p = random.random()
@@ -31,6 +37,7 @@ class House(multiprocessing.Process):
         self.clock = Clock
         self.weather = Weather
 
+        #  pipe to send information to the main
         self.pipe = pipe
 
         
@@ -38,26 +45,34 @@ class House(multiprocessing.Process):
         self.MqHouse = sysv_ipc.MessageQueue(self.i, sysv_ipc.IPC_CREAT)
 
     def Production(self):
-        prod = self.productionFactor * (self.weather[1] * 0.65)  # 0.65 = Energy production per hour of sunlight
-        #print(prod)
+        #  In theory, 1 m2 receive 1kw
+        prod = self.area_of_solar_panels * self.weather[1]  # number of kwh produced
         return prod
         
     def consommation(self):
-        conso = self.consommationFactor / self.weather[0]
-        #print(conso)
-        return conso
+        """
+        We assume people don't have Air conditioning when it's too hot
+        :return: a value that is inversely proportional to temperature
+        """
+        if self.weather[0] == 0:
+            return 20
+        elif self.weather[0] > 25:
+            return 1 + self.consommationFactor
+        else:
+            return 20
+
+
 
     def run(self):
         client = sysv_ipc.MessageQueue(-2)  # to send messages to the House Queue : the gifts of free energy
         client_market = sysv_ipc.MessageQueue(-1) #to send messages to the market : the payable energy
         while True:
             
-            #print("Clock recupere dans house : ", self.clock.value)
-            if self.clock.value == 1:# The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part
+            # print("Clock recupere dans house : ", self.clock.value)
+            if self.clock.value == 1:  # The value of the shared memory has been updated by the Clock : it is the turn of the houses to calculate their part
 
-                self.Money += self.income / 30# The house win money with the work of the family
-                created_energy = self.Production()
-                self.EnergyBalance = created_energy - self.consommation()
+                self.Money += self.income / 30  # The house win money with the work of the family
+                self.EnergyBalance = self.Production() - self.consommation()
                 #   alert the main process that it needs to print data now
                 self.pipe.send([self.i, self.Money, self.income, self.EnergyBalance])
                 

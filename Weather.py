@@ -31,7 +31,7 @@ class Weather(multiprocessing.Process):
                 standard_deviation = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
                 #  Generate a value according to a Normal distribution around the mean
                 v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
-                while (v > DataTemp[k][2]) and (v < DataTemp[k][1]):
+                while (v > DataTemp[k][2]) or (v < DataTemp[k][1]):
                     v = random.gauss(DataTemp[k][1], 0.3*standard_deviation)
                 return v
 
