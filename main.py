@@ -28,7 +28,7 @@ if __name__ == "__main__":
     
     day = multiprocessing.Value('i', 1) #The date of today
 
-    numberOfHouses = 10
+    numberOfHouses = 100
     
     
     ###COMMUNICATION

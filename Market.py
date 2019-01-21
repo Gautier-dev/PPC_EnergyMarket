@@ -61,7 +61,7 @@ class Market(multiprocessing.Process):
         # External factors : a counter of disasters which increases the price
         disasters = externalFactors
         # Attenuation factor :
-        lamb = 0.99
+        lamb = 0.95
         if PayableEnergyBank < 1:
             PayableEnergyBank = 1
         if PayableEnergyWanted < PayableEnergyBank:
