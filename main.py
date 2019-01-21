@@ -8,7 +8,6 @@ import House
 import Weather
 import sysv_ipc
 import matplotlib.pyplot
-import tkinter
 
 if __name__ == "__main__":
 
@@ -49,8 +48,7 @@ if __name__ == "__main__":
 
     ###MAIN
 
-    
-
+    choice = input("If you want to follow the evolution of all the houses during the simulation, type y.\n>")
     
     marketProcess = Market.Market(externalFactors, lockExternal, globalNeed, lockGlobalNeed, payableEnergyBank, lockPayable, clocker, weather, market_conn)
     print("Starting market")
@@ -74,8 +72,7 @@ if __name__ == "__main__":
     # For the graph
     dayG = []
     priceG = []
-
-    housesG = [[] for k in range(numberOfHouses)]
+    communityG = []
     
     while True:
         if clocker.value == 0:
@@ -103,22 +100,23 @@ if __name__ == "__main__":
                       "price of the energy for the whole community is : {}.\n".format(result_market[0],
                                                                                       result_market[1],result_market[2]))
 
-                for k in range(numberOfHouses):
-                    tab = houses_pipes[k][0].recv()
-                    print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
-                          .format(tab[0], tab[1], tab[2], tab[3]))
-                    housesG[k].append(tab[1])
+                if choice == "y":
+                    for k in range(numberOfHouses):
+                        tab = houses_pipes[k][0].recv()
+                        print("House {} has {:.6}$, an income of {:.6}$ and an energy balance of {}"
+                              .format(tab[0], tab[1], tab[2], tab[3]))
                 dayG.append(day.value)
                 priceG.append(result_market[0])
+                communityG.append(result_market[2])
 
                 matplotlib.pyplot.clf()
                 matplotlib.pyplot.subplot(121)
 
-                matplotlib.pyplot.title("values for the day {} : temperature will be {:.3} and it will have {:.3} hours of sunlight".format(day.value, weather[0], weather[1]))
+                matplotlib.pyplot.title("Price of the kWH for the day {} : ".format(day.value))
                 matplotlib.pyplot.plot(dayG, priceG, 'r--')
                 matplotlib.pyplot.subplot(122)
-                matplotlib.pyplot.title("houses")
-                matplotlib.pyplot.plot(dayG, housesG[0], 'r', dayG, housesG[1], 'b', dayG, housesG[2], 'y')  #todo toutes les maisons
+                matplotlib.pyplot.title("Price for the community :")
+                matplotlib.pyplot.plot(dayG, communityG, 'r')  #todo toutes les maisons
 
                 matplotlib.pyplot.show()
 

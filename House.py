@@ -11,15 +11,15 @@ class House(multiprocessing.Process):
         self.EnergyBalance = 0
 
         #Randomisation of the house (income, consommation, production...)
-        person = random.gauss(2, 1)
+        person = random.gauss(2, 2)
         while person < 0:
-            person = random.gauss(2, 1)
+            person = random.gauss(2,2)
         self.Number_of_People = person
 
         #houses have 5 m2 of solar panels on average
-        area = random.gauss(6, 5)
+        area = random.gauss(4, 5)
         while area < 0:
-            area = random.gauss(6, 5)
+            area = random.gauss(4, 5)
         self.area_of_solar_panels = area
         self.lock = LockMaison
 
@@ -143,6 +143,7 @@ class House(multiprocessing.Process):
                         value = float(message.decode())
                         self.Money = self.Money + value
                         if self.Money < 0:
-                            print("House {} does not have money anymore ! Giving it 500 $.".format(self.i))
+                            #print("House {} does not have money anymore ! Giving it 500 $.".format(self.i))
+                            self.Money += 500
                         while self.clock.value == 0: 
                             pass
