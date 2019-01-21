@@ -19,3 +19,10 @@
     At anytime :
     The EXTERNAL process can, at any moment, signal a disaster to the market.
     The MAIN process deliver the user some data to follow the evolution of the events.
+
+# Instructions 
+ - Extract the archive.
+ - Download the modules matplotlib.pyplot, ast and sysv_ipc (you need to run on a Linux machine !) .
+ - Run the main.py program.
+ You will be able to see how the simulation goes.
+ - To end the simulation, interrupt the program by pressing ctrl + C.
