@@ -26,7 +26,7 @@ class Weather(multiprocessing.Process):
         for k in range(12):
             add_day_up = 0
             for i in range(k):
-                add_day_up += NumberDayMonth[k]
+                add_day_up += NumberDayMonth[i]
             if add_day_up < self.day.value <= add_day_up + NumberDayMonth[k]:
                 standard_deviation = min(abs(DataTemp[k][0] - DataTemp[k][1]), abs(DataTemp[k][0] - DataTemp[k][2]))
                 #  Generate a value according to a Normal distribution around the mean

@@ -15,7 +15,7 @@ class externalProcess(multiprocessing.Process):
             super().__init__()
 
         def run(self):
-            time.sleep(400)
+            time.sleep(1)
             x = random.random()
-            if x > 0.99:
+            if x > 0.7:
                 os.kill(os.getppid(), signal.SIGINT)

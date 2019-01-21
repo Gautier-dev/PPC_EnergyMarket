@@ -48,24 +48,28 @@ class Market(multiprocessing.Process):
 
     def priceCalculation(self, PayableEnergyWanted, PayableEnergyBank, externalFactors, price):
         """
-        This function calculates the price of the energy.
+        his function calculates the price per kWh of electricity.
         The more energy the people need and he less energy the bank has, the more expensive it would be.
         We also have to check the externalFactors and the weather
+        :param PayableEnergyWanted: The total energy needed by all of the houses (unit kWh)
+        :param PayableEnergyBank: The total energy surplus produced by all of the houses (unit kWh)
+        :param externalFactors:
+        :param price: price of the previous day
+        :return: the price per kWh of electricity
         """
         
         # External factors : a counter of disasters which increases the price
-        disasters = externalFactors * 10
+        disasters = externalFactors
         # Attenuation factor :
         lamb = 0.99
-        if PayableEnergyBank == 0:
+        if PayableEnergyBank < 1:
             PayableEnergyBank = 1
-        
-        if PayableEnergyWanted == 0:
-            factor = 1/2
+        if PayableEnergyWanted < PayableEnergyBank:
+            factor = 0
         else:
-            factor = (PayableEnergyWanted / PayableEnergyBank)
+            factor = PayableEnergyWanted/PayableEnergyBank
         
-        return (price * lamb + disasters + factor)  # "NotReallyAccurateModel" (tm)
+        return price * (lamb + disasters * 0.1 + factor * 0.1)  # "NotReallyAccurateModel" (tm)
 
 
     def handler(self, sig, frame):
@@ -73,7 +77,7 @@ class Market(multiprocessing.Process):
             with self.lockExternal:
                 self.externalFactors.value += 1
 
-    def interprete(self, restOrNeed, price, houseIdentifier ):
+    def interprete(self, EnergyBalance, price, houseIdentifier):
         """
         After the reception of a message through the message queue, we have to interprete it :
         Do the house need energy ? -> Do the globalneed needs to be increased ?
@@ -82,14 +86,14 @@ class Market(multiprocessing.Process):
         value : (HouseIdentifier,RestOrNeed)
         """
         mqHouse = sysv_ipc.MessageQueue(houseIdentifier)        
-        message = str(restOrNeed * price).encode()
+        message = str(EnergyBalance * price).encode()
         mqHouse.send(message)  # We send to the house the price it has to pay for the energy.
-        if restOrNeed < 0:  # The House NEEDS energy
+        if EnergyBalance < 0:  # The House NEEDS energy
             with self.lockGlobalNeed:
-                self.globalNeed.value -= restOrNeed
+                self.globalNeed.value -= EnergyBalance
         else:  # The house SELLS energy
             with self.lockPayable:
-                self.energyBank.value += restOrNeed
+                self.energyBank.value += EnergyBalance
 
     def run(self):
         external = External.externalProcess()
@@ -98,7 +102,7 @@ class Market(multiprocessing.Process):
         external.start()
 
         
-        price = 100 #Price at the beginning of the simulation
+        price = 0.16 #Price at the beginning of the simulation
             
     
         while True:
